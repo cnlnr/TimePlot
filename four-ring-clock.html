@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>尊享大表盘 - 四圈创意 Web 钟表</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 钟表外包裹：进一步放大至 680px 级别 */
+        .clock-container {
+            position: relative;
+            width: 680px;
+            height: 680px;
+            margin-bottom: 30px;
+            /* 腾出底部给按钮的间距 */
+        }
+
+        /* 所有圆盘核心居中 */
+        .absolute-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: background 0.4s ease;
+        }
+
+        /* --- 大表盘：四圈基础轨道尺寸与层级 --- */
+        #second-track {
+            width: 640px;
+            height: 640px;
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            z-index: 1;
+        }
+
+        #minute-track {
+            width: 510px;
+            height: 510px;
+            border: 1px solid rgba(255, 165, 2, 0.2);
+            z-index: 2;
+        }
+
+        #hour-track {
+            width: 380px;
+            height: 380px;
+            border: 1px solid rgba(46, 213, 115, 0.2);
+            z-index: 3;
+        }
+
+        #week-track {
+            width: 250px;
+            height: 250px;
+            border: 1px solid rgba(30, 144, 255, 0.25);
+            z-index: 4;
+        }
+
+        /* --- 彩色模式下的实体圆盘背景色 --- */
+        .color-mode #second-track {
+            background-color: rgba(255, 71, 87, 0.04);
+        }
+
+        .color-mode #minute-track {
+            background-color: rgba(255, 165, 2, 0.05);
+        }
+
+        .color-mode #hour-track {
+            background-color: rgba(46, 213, 115, 0.06);
+        }
+
+        .color-mode #week-track {
+            background-color: rgba(30, 144, 255, 0.08);
+        }
+
+        /* 刻度包装盒 */
+        .scale-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 单个刻度条容器 */
+        .tick-item {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 40px;
+            height: 50%;
+            margin-left: -20px;
+            transform-origin: bottom center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 刻度线标准样式 */
+        .tick-mark {
+            width: 1px;
+            background-color: #555;
+        }
+
+        /* 刻度数字标准样式 */
+        .tick-num {
+            font-size: 10px;
+            /* 大表盘字号略微放大提升可读性 */
+            color: #777;
+            text-align: center;
+            line-height: 1;
+            margin-top: 3px;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), color 0.4s ease;
+        }
+
+        /* --- 各圈刻度与高亮样式 --- */
+        #second-track .tick-mark {
+            height: 6px;
+        }
+
+        #second-track .tick-item.major .tick-mark {
+            height: 11px;
+            width: 2px;
+            background-color: #ff4757;
+        }
+
+        #second-track .tick-item.major .tick-num {
+            color: #ff4757;
+            font-weight: bold;
+        }
+
+        #minute-track .tick-mark {
+            height: 5px;
+        }
+
+        #minute-track .tick-item.major .tick-mark {
+            height: 10px;
+            width: 1.5px;
+            background-color: #ffa502;
+        }
+
+        #minute-track .tick-item.major .tick-num {
+            color: #ffa502;
+        }
+
+        #hour-track .tick-mark {
+            height: 6px;
+            width: 1.5px;
+            background-color: #2ed573;
+        }
+
+        #hour-track .tick-num {
+            color: #2ed573;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        #week-track .tick-mark {
+            height: 7px;
+            width: 2px;
+            background-color: #1e90ff;
+        }
+
+        #week-track .tick-num {
+            color: #1e90ff;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .color-mode .tick-num {
+            color: #aaaaaa;
+        }
+
+        /* --- 指针样式（根据大表盘比例等比例延伸，且与数字错开） --- */
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            border-radius: 4px 4px 0 0;
+            z-index: 10;
+        }
+
+        #second-hand {
+            width: 2px;
+            height: 295px;
+            background: #ff4757;
+            margin-left: -1px;
+        }
+
+        #minute-hand {
+            width: 4px;
+            height: 220px;
+            background: #ffa502;
+            margin-left: -2px;
+        }
+
+        #hour-hand {
+            width: 5px;
+            height: 155px;
+            background: #2ed573;
+            margin-left: -2.5px;
+        }
+
+        #week-hand {
+            width: 5px;
+            height: 95px;
+            background: #1e90ff;
+            margin-left: -2.5px;
+        }
+
+        /* 中心轴帽 */
+        .center-nut {
+            width: 14px;
+            height: 14px;
+            background-color: #ffffff;
+            z-index: 20;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+        }
+
+        /* 底部控制按钮区域 */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            padding: 10px 18px;
+            background-color: #222;
+            color: #ccc;
+            border: 1px solid #444;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:hover {
+            background-color: #333;
+            color: #fff;
+            border-color: #666;
+        }
+
+        /* 激活/非默认状态的按钮样式 */
+        .control-btn.active-status {
+            background-color: #3f3f3f;
+            color: #fff;
+            border-color: #888;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="clock-container" id="clock-board">
+        <div id="second-track" class="absolute-center">
+            <div class="scale-wrapper" id="second-scales"></div>
+        </div>
+        <div id="second-hand" class="hand"></div>
+
+        <div id="minute-track" class="absolute-center">
+            <div class="scale-wrapper" id="minute-scales"></div>
+        </div>
+        <div id="minute-hand" class="hand"></div>
+
+        <div id="hour-track" class="absolute-center">
+            <div class="scale-wrapper" id="hour-scales"></div>
+        </div>
+        <div id="hour-hand" class="hand"></div>
+
+        <div id="week-track" class="absolute-center">
+            <div class="scale-wrapper" id="week-scales"></div>
+        </div>
+        <div id="week-hand" class="hand"></div>
+
+        <div class="center-nut absolute-center"></div>
+    </div>
+
+    <div class="btn-group">
+        <button class="control-btn" id="toggle-dir-btn">文字方向：放射模式</button>
+        <button class="control-btn" id="toggle-color-btn">表盘背景：默认暗黑</button>
+        <button class="control-btn" id="toggle-motion-btn">走时方式：平滑流动</button>
+    </div>
+
+    <script>
+        // 配置状态对象
+        let config = {
+            textDirectionMode: 'radial',
+            isColorMode: false,
+            motionMode: 'smooth'  // 'smooth'(全平滑), 'sec-tick'(仅秒针跳), 'all-tick'(全跳动)
+        };
+
+        const allTickNumElements = [];
+
+        // 渲染刻度和数字
+        function renderRingScales(wrapperId, totalTicks, labelFunc, isMajorFunc) {
+            const wrapper = document.getElementById(wrapperId);
+            for (let i = 0; i < totalTicks; i++) {
+                const item = document.createElement('div');
+                item.className = 'tick-item';
+
+                const angle = (i * 360) / totalTicks;
+                item.style.transform = `rotate(${angle}deg)`;
+
+                if (isMajorFunc && isMajorFunc(i)) {
+                    item.classList.add('major');
+                }
+
+                const mark = document.createElement('div');
+                mark.className = 'tick-mark';
+                item.appendChild(mark);
+
+                const labelText = labelFunc ? labelFunc(i) : '';
+                if (labelText !== null && labelText !== '') {
+                    const num = document.createElement('div');
+                    num.className = 'tick-num';
+                    num.innerText = labelText;
+                    num.dataset.originalAngle = angle;
+
+                    item.appendChild(num);
+                    allTickNumElements.push(num);
+                }
+
+                wrapper.appendChild(item);
+            }
+        }
+
+        // --- 初始化四圈刻度 ---
+        renderRingScales('second-scales', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
+        renderRingScales('minute-scales', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
+        renderRingScales('hour-scales', 24, (i) => (i < 10 ? '0' + i : i), () => true);
+
+        const weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        renderRingScales('week-scales', 7, (i) => weeks[i], () => true);
+
+
+        // --- 读取本地存储配置（饼干功能） ---
+        function loadSavedConfig() {
+            const savedConfig = localStorage.getItem('four_ring_clock_config');
+            if (savedConfig) {
+                try {
+                    config = JSON.parse(savedConfig);
+                } catch (e) {
+                    console.error("配置解析失败");
+                }
+            }
+            applyConfigUI();
+        }
+
+        // --- 保存配置 ---
+        function saveConfig() {
+            localStorage.setItem('four_ring_clock_config', JSON.stringify(config));
+        }
+
+        // --- 应用配置到 UI 界面 ---
+        function applyConfigUI() {
+            const toggleDirBtn = document.getElementById('toggle-dir-btn');
+            const toggleColorBtn = document.getElementById('toggle-color-btn');
+            const toggleMotionBtn = document.getElementById('toggle-motion-btn');
+            const clockBoard = document.getElementById('clock-board');
+            const hands = document.querySelectorAll('.hand');
+
+            // 1. 文字方向
+            if (config.textDirectionMode === 'upright') {
+                toggleDirBtn.innerText = '文字方向：正立模式';
+                toggleDirBtn.classList.add('active-status');
+                allTickNumElements.forEach(num => {
+                    num.style.transform = `rotate(${-num.dataset.originalAngle}deg)`;
+                });
+            } else {
+                toggleDirBtn.innerText = '文字方向：放射模式';
+                toggleDirBtn.classList.remove('active-status');
+                allTickNumElements.forEach(num => {
+                    num.style.transform = 'rotate(0deg)';
+                });
+            }
+
+            // 2. 盘面背景
+            if (config.isColorMode) {
+                clockBoard.classList.add('color-mode');
+                toggleColorBtn.innerText = '表盘背景：各圈独立';
+                toggleColorBtn.classList.add('active-status');
+            } else {
+                clockBoard.classList.remove('color-mode');
+                toggleColorBtn.innerText = '表盘背景：默认暗黑';
+                toggleColorBtn.classList.remove('active-status');
+            }
+
+            // 3. 三档走时方式文本和过渡控制
+            if (config.motionMode === 'smooth') {
+                toggleMotionBtn.innerText = '走时方式：平滑流动';
+                toggleMotionBtn.classList.remove('active-status');
+                hands.forEach(hand => hand.style.transition = 'transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)');
+            } else if (config.motionMode === 'sec-tick') {
+                toggleMotionBtn.innerText = '走时方式：仅秒针跳';
+                toggleMotionBtn.classList.add('active-status');
+                hands.forEach(hand => hand.style.transition = 'transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)');
+                document.getElementById('second-hand').style.transition = 'none'; // 秒针跳动去掉平滑过渡
+            } else if (config.motionMode === 'all-tick') {
+                toggleMotionBtn.innerText = '走时方式：全指针跳';
+                toggleMotionBtn.classList.add('active-status');
+                hands.forEach(hand => hand.style.transition = 'none'); // 全部干脆利落跳动
+            }
+        }
+
+
+        // --- 按钮事件绑定 ---
+        document.getElementById('toggle-dir-btn').addEventListener('click', () => {
+            config.textDirectionMode = (config.textDirectionMode === 'radial') ? 'upright' : 'radial';
+            applyConfigUI();
+            saveConfig();
+        });
+
+        document.getElementById('toggle-color-btn').addEventListener('click', () => {
+            config.isColorMode = !config.isColorMode;
+            applyConfigUI();
+            saveConfig();
+        });
+
+        document.getElementById('toggle-motion-btn').addEventListener('click', () => {
+            // 三档模式循环逻辑：smooth -> sec-tick -> all-tick -> smooth
+            if (config.motionMode === 'smooth') {
+                config.motionMode = 'sec-tick';
+            } else if (config.motionMode === 'sec-tick') {
+                config.motionMode = 'all-tick';
+            } else {
+                config.motionMode = 'smooth';
+            }
+            applyConfigUI();
+            saveConfig();
+        });
+
+
+        // --- 驱动时钟运转 ---
+        function runClock() {
+            const now = new Date();
+            const msh = now.getMilliseconds();
+            const sec = now.getSeconds();
+            const min = now.getMinutes();
+            const hr = now.getHours();
+            const day = now.getDay();
+
+            let secAngle, minAngle, hrAngle, weekAngle;
+
+            // 根据三档模式进行独立的时间计算
+            if (config.motionMode === 'smooth') {
+                // 1. 全平滑流动
+                secAngle = (sec * 6) + (msh * 0.006);
+                minAngle = (min * 6) + (sec * 0.1);
+                hrAngle = (hr * 15) + (min * 0.25);
+                weekAngle = (day * (360 / 7)) + (hr * (360 / 7 / 24));
+            } else if (config.motionMode === 'sec-tick') {
+                // 2. 仅秒针跳动，其余平滑
+                secAngle = sec * 6;
+                minAngle = (min * 6) + (sec * 0.1);
+                hrAngle = (hr * 15) + (min * 0.25);
+                weekAngle = (day * (360 / 7)) + (hr * (360 / 7 / 24));
+            } else if (config.motionMode === 'all-tick') {
+                // 3. 全指针整数跳动
+                secAngle = sec * 6;
+                minAngle = min * 6;
+                hrAngle = hr * 15;
+                weekAngle = day * (360 / 7);
+            }
+
+            // 转动指针
+            document.getElementById('second-hand').style.transform = `translate(-50%, 0) rotate(${secAngle}deg)`;
+            document.getElementById('minute-hand').style.transform = `translate(-50%, 0) rotate(${minAngle}deg)`;
+            document.getElementById('hour-hand').style.transform = `translate(-50%, 0) rotate(${hrAngle}deg)`;
+            document.getElementById('week-hand').style.transform = `translate(-50%, 0) rotate(${weekAngle}deg)`;
+
+            requestAnimationFrame(runClock);
+        }
+
+        // 初始化加载与运行
+        loadSavedConfig();
+        requestAnimationFrame(runClock);
+    </script>
+</body>
+
+</html>
