@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>尊享大表盘 - 四圈创意 Web 钟表</title>
+    <title>时空转盘仪表板 - 四圈创意 Web 钟表</title>
     <style>
         * {
             box-sizing: border-box;
@@ -23,13 +23,12 @@
             overflow: hidden;
         }
 
-        /* 钟表外包裹：进一步放大至 680px 级别 */
+        /* 钟表外包裹 */
         .clock-container {
             position: relative;
             width: 680px;
             height: 680px;
             margin-bottom: 30px;
-            /* 腾出底部给按钮的间距 */
         }
 
         /* 所有圆盘核心居中 */
@@ -39,10 +38,9 @@
             left: 50%;
             transform: translate(-50%, -50%);
             border-radius: 50%;
-            transition: background 0.4s ease;
         }
 
-        /* --- 大表盘：四圈基础轨道尺寸与层级 --- */
+        /* --- 四圈基础轨道尺寸与层级 --- */
         #second-track {
             width: 640px;
             height: 640px;
@@ -113,21 +111,18 @@
             align-items: center;
         }
 
-        /* 刻度线标准样式 */
         .tick-mark {
             width: 1px;
             background-color: #555;
         }
 
-        /* 刻度数字标准样式 */
         .tick-num {
             font-size: 10px;
-            /* 大表盘字号略微放大提升可读性 */
             color: #777;
             text-align: center;
             line-height: 1;
             margin-top: 3px;
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), color 0.4s ease;
+            transition: color 0.4s ease;
         }
 
         /* --- 各圈刻度与高亮样式 --- */
@@ -137,7 +132,7 @@
 
         #second-track .tick-item.major .tick-mark {
             height: 11px;
-            width: 2px;
+            width: 1.5px;
             background-color: #ff4757;
         }
 
@@ -174,7 +169,7 @@
 
         #week-track .tick-mark {
             height: 7px;
-            width: 2px;
+            width: 1.5px;
             background-color: #1e90ff;
         }
 
@@ -189,51 +184,71 @@
             color: #aaaaaa;
         }
 
-        /* --- 指针样式（根据大表盘比例等比例延伸，且与数字错开） --- */
+        /* --- 传统指针样式：极细线 --- */
         .hand {
             position: absolute;
             bottom: 50%;
             left: 50%;
             transform-origin: bottom center;
-            border-radius: 4px 4px 0 0;
+            border-radius: 2px 2px 0 0;
             z-index: 10;
         }
 
         #second-hand {
-            width: 2px;
+            width: 1px;
             height: 295px;
             background: #ff4757;
-            margin-left: -1px;
+            margin-left: -0.5px;
         }
 
         #minute-hand {
-            width: 4px;
+            width: 2px;
             height: 220px;
             background: #ffa502;
-            margin-left: -2px;
+            margin-left: -1px;
         }
 
         #hour-hand {
-            width: 5px;
+            width: 2.5px;
             height: 155px;
             background: #2ed573;
-            margin-left: -2.5px;
+            margin-left: -1.25px;
         }
 
         #week-hand {
-            width: 5px;
+            width: 2.5px;
             height: 95px;
             background: #1e90ff;
-            margin-left: -2.5px;
+            margin-left: -1.25px;
         }
 
-        /* 中心轴帽 */
         .center-nut {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background-color: #ffffff;
+            z-index: 25;
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* --- 右侧单条静止基准线：1px 纯红细针 --- */
+        .fixed-reading-line {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 320px;
+            height: 1px;
+            background-color: #ff4757;
+            transform-origin: left center;
+            transform: translateY(-50%) rotate(0deg);
             z-index: 20;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            display: none;
+            pointer-events: none;
+            box-shadow: 0 0 4px rgba(255, 71, 87, 0.5);
+        }
+
+        /* 隐藏传统指针的动态控制类 */
+        .hide-hand {
+            display: none !important;
         }
 
         /* 底部控制按钮区域 */
@@ -263,7 +278,6 @@
             border-color: #666;
         }
 
-        /* 激活/非默认状态的按钮样式 */
         .control-btn.active-status {
             background-color: #3f3f3f;
             color: #fff;
@@ -279,22 +293,22 @@
         <div id="second-track" class="absolute-center">
             <div class="scale-wrapper" id="second-scales"></div>
         </div>
-        <div id="second-hand" class="hand"></div>
-
         <div id="minute-track" class="absolute-center">
             <div class="scale-wrapper" id="minute-scales"></div>
         </div>
-        <div id="minute-hand" class="hand"></div>
-
         <div id="hour-track" class="absolute-center">
             <div class="scale-wrapper" id="hour-scales"></div>
         </div>
-        <div id="hour-hand" class="hand"></div>
-
         <div id="week-track" class="absolute-center">
             <div class="scale-wrapper" id="week-scales"></div>
         </div>
+
+        <div id="second-hand" class="hand"></div>
+        <div id="minute-hand" class="hand"></div>
+        <div id="hour-hand" class="hand"></div>
         <div id="week-hand" class="hand"></div>
+
+        <div id="reading-line" class="fixed-reading-line"></div>
 
         <div class="center-nut absolute-center"></div>
     </div>
@@ -303,31 +317,54 @@
         <button class="control-btn" id="toggle-dir-btn">文字方向：放射模式</button>
         <button class="control-btn" id="toggle-color-btn">表盘背景：默认暗黑</button>
         <button class="control-btn" id="toggle-motion-btn">走时方式：平滑流动</button>
+        <button class="control-btn" id="toggle-mode-btn">显示模式：指针旋转</button>
+        <button class="control-btn" id="toggle-density-btn">数字密度：每5格显示</button>
     </div>
 
     <script>
-        // 配置状态对象
+        // 配置状态
         let config = {
             textDirectionMode: 'radial',
             isColorMode: false,
-            motionMode: 'smooth'  // 'smooth'(全平滑), 'sec-tick'(仅秒针跳), 'all-tick'(全跳动)
+            motionMode: 'smooth',
+            displayMode: 'hand-rot',
+            densityMode: 'sparse' // 'sparse' 为每5格显示数字，'full' 为全部刻度均显示数字
         };
 
-        const allTickNumElements = [];
+        // 按圈分类存储文字元素，方便动画帧中精准快速地分圈做矩阵反向补偿
+        let categorizedTickNums = { sec: [], min: [], hr: [], wk: [] };
 
-        // 渲染刻度和数字
-        function renderRingScales(wrapperId, totalTicks, labelFunc, isMajorFunc) {
+        const trackElements = {
+            sec: document.getElementById('second-track'),
+            min: document.getElementById('minute-track'),
+            hr: document.getElementById('hour-track'),
+            wk: document.getElementById('week-track')
+        };
+        const handElements = {
+            sec: document.getElementById('second-hand'),
+            min: document.getElementById('minute-hand'),
+            hr: document.getElementById('hour-hand'),
+            wk: document.getElementById('week-hand')
+        };
+        const readingLine = document.getElementById('reading-line');
+
+        // 用于记录时间转换的平滑连续变量
+        let lastSeconds = 0, secondAngleTarget = 0;
+        let lastMinutes = 0, minuteAngleTarget = 0;
+        let lastHours = 0, hourAngleTarget = 0;
+        let lastDays = -1, weekAngleTarget = 0;
+
+        // 渲染刻度逻辑
+        function renderRingScales(wrapperId, ringKey, totalTicks, labelFunc, isMajorFunc) {
             const wrapper = document.getElementById(wrapperId);
+            wrapper.innerHTML = ''; // 清空原有内容，方便切换模式时重新生成
             for (let i = 0; i < totalTicks; i++) {
                 const item = document.createElement('div');
                 item.className = 'tick-item';
-
                 const angle = (i * 360) / totalTicks;
                 item.style.transform = `rotate(${angle}deg)`;
 
-                if (isMajorFunc && isMajorFunc(i)) {
-                    item.classList.add('major');
-                }
+                if (isMajorFunc && isMajorFunc(i)) item.classList.add('major');
 
                 const mark = document.createElement('div');
                 mark.className = 'tick-mark';
@@ -339,66 +376,72 @@
                     num.className = 'tick-num';
                     num.innerText = labelText;
                     num.dataset.originalAngle = angle;
-
                     item.appendChild(num);
-                    allTickNumElements.push(num);
+                    categorizedTickNums[ringKey].push(num); // 分组归档
                 }
-
                 wrapper.appendChild(item);
             }
         }
 
-        // --- 初始化四圈刻度 ---
-        renderRingScales('second-scales', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
-        renderRingScales('minute-scales', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
-        renderRingScales('hour-scales', 24, (i) => (i < 10 ? '0' + i : i), () => true);
+        // 初始化/刷新表盘文字布局
+        function initAllRingScales() {
+            categorizedTickNums = { sec: [], min: [], hr: [], wk: [] };
 
-        const weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-        renderRingScales('week-scales', 7, (i) => weeks[i], () => true);
+            // 秒圈和分圈根据 densityMode 配置决定是全显还是每5格显示
+            if (config.densityMode === 'full') {
+                renderRingScales('second-scales', 'sec', 60, (i) => (i < 10 ? '0' + i : i), (i) => i % 5 === 0);
+                renderRingScales('minute-scales', 'min', 60, (i) => (i < 10 ? '0' + i : i), (i) => i % 5 === 0);
+            } else {
+                renderRingScales('second-scales', 'sec', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
+                renderRingScales('minute-scales', 'min', 60, (i) => (i % 5 === 0 ? (i < 10 ? '0' + i : i) : ''), (i) => i % 5 === 0);
+            }
 
+            // 时圈与周圈属于固定展示逻辑，不受密度按钮干扰
+            renderRingScales('hour-scales', 'hr', 24, (i) => (i < 10 ? '0' + i : i), () => true);
+            const weeks = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            renderRingScales('week-scales', 'wk', 7, (i) => weeks[i], () => true);
+        }
 
-        // --- 读取本地存储配置（饼干功能） ---
         function loadSavedConfig() {
             const savedConfig = localStorage.getItem('four_ring_clock_config');
-            if (savedConfig) {
-                try {
-                    config = JSON.parse(savedConfig);
-                } catch (e) {
-                    console.error("配置解析失败");
-                }
-            }
+            if (savedConfig) { try { config = JSON.parse(savedConfig); } catch (e) { } }
+            // 预初始化角度变量
+            const initDate = new Date();
+            lastSeconds = initDate.getSeconds();
+            lastMinutes = initDate.getMinutes();
+            lastHours = initDate.getHours();
+            lastDays = initDate.getDay();
+            secondAngleTarget = lastSeconds * 6;
+            minuteAngleTarget = lastMinutes * 6;
+            hourAngleTarget = lastHours * 15;
+            weekAngleTarget = lastDays * (360 / 7);
+
+            initAllRingScales();
             applyConfigUI();
         }
+        function saveConfig() { localStorage.setItem('four_ring_clock_config', JSON.stringify(config)); }
 
-        // --- 保存配置 ---
-        function saveConfig() {
-            localStorage.setItem('four_ring_clock_config', JSON.stringify(config));
-        }
-
-        // --- 应用配置到 UI 界面 ---
+        // 应用配置
         function applyConfigUI() {
             const toggleDirBtn = document.getElementById('toggle-dir-btn');
             const toggleColorBtn = document.getElementById('toggle-color-btn');
             const toggleMotionBtn = document.getElementById('toggle-motion-btn');
+            const toggleModeBtn = document.getElementById('toggle-mode-btn');
+            const toggleDensityBtn = document.getElementById('toggle-density-btn');
             const clockBoard = document.getElementById('clock-board');
-            const hands = document.querySelectorAll('.hand');
 
-            // 1. 文字方向
+            // 1. 文字方向按钮文本切换
             if (config.textDirectionMode === 'upright') {
                 toggleDirBtn.innerText = '文字方向：正立模式';
                 toggleDirBtn.classList.add('active-status');
-                allTickNumElements.forEach(num => {
-                    num.style.transform = `rotate(${-num.dataset.originalAngle}deg)`;
-                });
             } else {
                 toggleDirBtn.innerText = '文字方向：放射模式';
                 toggleDirBtn.classList.remove('active-status');
-                allTickNumElements.forEach(num => {
-                    num.style.transform = 'rotate(0deg)';
-                });
+                // 放射模式下，直接重置清空所有的多余补偿
+                Object.values(categorizedTickNums).flat().forEach(num => num.style.transform = 'rotate(0deg)');
             }
 
-            // 2. 盘面背景
+            // 2. 表盘背景
             if (config.isColorMode) {
                 clockBoard.classList.add('color-mode');
                 toggleColorBtn.innerText = '表盘背景：各圈独立';
@@ -409,52 +452,75 @@
                 toggleColorBtn.classList.remove('active-status');
             }
 
-            // 3. 三档走时方式文本和过渡控制
-            if (config.motionMode === 'smooth') {
-                toggleMotionBtn.innerText = '走时方式：平滑流动';
-                toggleMotionBtn.classList.remove('active-status');
-                hands.forEach(hand => hand.style.transition = 'transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)');
-            } else if (config.motionMode === 'sec-tick') {
-                toggleMotionBtn.innerText = '走时方式：仅秒针跳';
-                toggleMotionBtn.classList.add('active-status');
-                hands.forEach(hand => hand.style.transition = 'transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)');
-                document.getElementById('second-hand').style.transition = 'none'; // 秒针跳动去掉平滑过渡
-            } else if (config.motionMode === 'all-tick') {
-                toggleMotionBtn.innerText = '走时方式：全指针跳';
-                toggleMotionBtn.classList.add('active-status');
-                hands.forEach(hand => hand.style.transition = 'none'); // 全部干脆利落跳动
+            // 3. 走时方式
+            if (config.motionMode === 'smooth') toggleMotionBtn.innerText = '走时方式：平滑流动';
+            else if (config.motionMode === 'sec-tick') toggleMotionBtn.innerText = '走时方式：仅秒针跳';
+            else toggleMotionBtn.innerText = '走时方式：全指针跳';
+
+            if (config.motionMode !== 'smooth') toggleMotionBtn.classList.add('active-status');
+            else toggleMotionBtn.classList.remove('active-status');
+
+            // 4. 显示模式
+            if (config.displayMode === 'dial-rot') {
+                toggleModeBtn.innerText = '显示模式：表盘旋转';
+                toggleModeBtn.classList.add('active-status');
+                Object.values(handElements).forEach(el => el.classList.add('hide-hand'));
+                readingLine.style.display = 'block';
+            } else {
+                toggleModeBtn.innerText = '显示模式：指针旋转';
+                toggleModeBtn.classList.remove('active-status');
+                Object.values(handElements).forEach(el => el.classList.remove('hide-hand'));
+                readingLine.style.display = 'none';
+                Object.values(trackElements).forEach(el => el.style.transform = 'translate(-50%, -50%) rotate(0deg)');
+            }
+
+            // 5. 数字密度
+            if (config.densityMode === 'full') {
+                toggleDensityBtn.innerText = '数字密度：全部显示';
+                toggleDensityBtn.classList.add('active-status');
+            } else {
+                toggleDensityBtn.innerText = '数字密度：每5格显示';
+                toggleDensityBtn.classList.remove('active-status');
+            }
+
+            // 阻尼过渡
+            const needTransition = config.motionMode === 'smooth' || (config.motionMode === 'sec-tick');
+            const transStyle = needTransition ? 'transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+
+            Object.values(handElements).forEach(el => el.style.transition = transStyle);
+            Object.values(trackElements).forEach(el => el.style.transition = transStyle);
+            if (config.motionMode === 'sec-tick') {
+                handElements.sec.style.transition = 'none';
+                trackElements.sec.style.transition = 'none';
             }
         }
 
-
-        // --- 按钮事件绑定 ---
+        // 事件监听
         document.getElementById('toggle-dir-btn').addEventListener('click', () => {
             config.textDirectionMode = (config.textDirectionMode === 'radial') ? 'upright' : 'radial';
-            applyConfigUI();
-            saveConfig();
+            applyConfigUI(); saveConfig();
         });
-
         document.getElementById('toggle-color-btn').addEventListener('click', () => {
             config.isColorMode = !config.isColorMode;
-            applyConfigUI();
-            saveConfig();
+            applyConfigUI(); saveConfig();
         });
-
         document.getElementById('toggle-motion-btn').addEventListener('click', () => {
-            // 三档模式循环逻辑：smooth -> sec-tick -> all-tick -> smooth
-            if (config.motionMode === 'smooth') {
-                config.motionMode = 'sec-tick';
-            } else if (config.motionMode === 'sec-tick') {
-                config.motionMode = 'all-tick';
-            } else {
-                config.motionMode = 'smooth';
-            }
-            applyConfigUI();
-            saveConfig();
+            if (config.motionMode === 'smooth') config.motionMode = 'sec-tick';
+            else if (config.motionMode === 'sec-tick') config.motionMode = 'all-tick';
+            else config.motionMode = 'smooth';
+            applyConfigUI(); saveConfig();
+        });
+        document.getElementById('toggle-mode-btn').addEventListener('click', () => {
+            config.displayMode = (config.displayMode === 'hand-rot') ? 'dial-rot' : 'hand-rot';
+            applyConfigUI(); saveConfig();
+        });
+        document.getElementById('toggle-density-btn').addEventListener('click', () => {
+            config.densityMode = (config.densityMode === 'sparse') ? 'full' : 'sparse';
+            initAllRingScales(); // 密度改变，重塑 DOM
+            applyConfigUI(); saveConfig();
         });
 
-
-        // --- 驱动时钟运转 ---
+        // 核心动力源
         function runClock() {
             const now = new Date();
             const msh = now.getMilliseconds();
@@ -463,39 +529,105 @@
             const hr = now.getHours();
             const day = now.getDay();
 
-            let secAngle, minAngle, hrAngle, weekAngle;
-
-            // 根据三档模式进行独立的时间计算
+            // 1. 秒角度
+            if (sec !== lastSeconds) {
+                if (sec === 0 && lastSeconds === 59) secondAngleTarget += 6;
+                else secondAngleTarget += (sec - lastSeconds) * 6;
+                lastSeconds = sec;
+            }
+            let sAng = secondAngleTarget;
             if (config.motionMode === 'smooth') {
-                // 1. 全平滑流动
-                secAngle = (sec * 6) + (msh * 0.006);
-                minAngle = (min * 6) + (sec * 0.1);
-                hrAngle = (hr * 15) + (min * 0.25);
-                weekAngle = (day * (360 / 7)) + (hr * (360 / 7 / 24));
-            } else if (config.motionMode === 'sec-tick') {
-                // 2. 仅秒针跳动，其余平滑
-                secAngle = sec * 6;
-                minAngle = (min * 6) + (sec * 0.1);
-                hrAngle = (hr * 15) + (min * 0.25);
-                weekAngle = (day * (360 / 7)) + (hr * (360 / 7 / 24));
-            } else if (config.motionMode === 'all-tick') {
-                // 3. 全指针整数跳动
-                secAngle = sec * 6;
-                minAngle = min * 6;
-                hrAngle = hr * 15;
-                weekAngle = day * (360 / 7);
+                sAng += (msh * 0.006);
             }
 
-            // 转动指针
-            document.getElementById('second-hand').style.transform = `translate(-50%, 0) rotate(${secAngle}deg)`;
-            document.getElementById('minute-hand').style.transform = `translate(-50%, 0) rotate(${minAngle}deg)`;
-            document.getElementById('hour-hand').style.transform = `translate(-50%, 0) rotate(${hrAngle}deg)`;
-            document.getElementById('week-hand').style.transform = `translate(-50%, 0) rotate(${weekAngle}deg)`;
+            // 2. 分角度
+            if (min !== lastMinutes) {
+                if (min === 0 && lastMinutes === 59) minuteAngleTarget += 6;
+                else minuteAngleTarget += (min - lastMinutes) * 6;
+                lastMinutes = min;
+            }
+            let mAng = minuteAngleTarget;
+            if (config.motionMode === 'smooth' || config.motionMode === 'sec-tick') {
+                mAng += (sec * 0.1);
+            }
+
+            // 3. 时角度
+            if (hr !== lastHours) {
+                if (hr === 0 && lastHours === 23) hourAngleTarget += 15;
+                else hourAngleTarget += (hr - lastHours) * 15;
+                lastHours = hr;
+            }
+            let hAng = hourAngleTarget;
+            if (config.motionMode === 'smooth' || config.motionMode === 'sec-tick') {
+                hAng += (min * 0.25);
+            }
+
+            // 4. 周角度
+            const degreesPerDay = 360 / 7;
+            if (day !== lastDays) {
+                if (lastDays !== -1) {
+                    if (day === 0 && lastDays === 6) weekAngleTarget += degreesPerDay;
+                    else {
+                        let diff = day - lastDays;
+                        if (diff < -1) diff += 7;
+                        weekAngleTarget += diff * degreesPerDay;
+                    }
+                } else {
+                    weekAngleTarget = day * degreesPerDay;
+                }
+                lastDays = day;
+            }
+            let wAng = weekAngleTarget;
+            if (config.motionMode === 'smooth' || config.motionMode === 'sec-tick') {
+                wAng += (hr * (degreesPerDay / 24));
+            }
+
+            // 计算各表盘轨道的动态旋转角度变量
+            let secTrackRot = 0, minTrackRot = 0, hrTrackRot = 0, wkTrackRot = 0;
+
+            // --- UI 渲染输出 ---
+            if (config.displayMode === 'hand-rot') {
+                // 【标准指针模式】：表盘不转（旋转度为0）
+                handElements.sec.style.transform = `translate(-50%, 0) rotate(${sAng}deg)`;
+                handElements.min.style.transform = `translate(-50%, 0) rotate(${mAng}deg)`;
+                handElements.hr.style.transform = `translate(-50%, 0) rotate(${hAng}deg)`;
+                handElements.wk.style.transform = `translate(-50%, 0) rotate(${wAng}deg)`;
+            } else {
+                // 【表盘旋转模式】：计算出每一圈表盘当前的实际旋转角度
+                secTrackRot = 90 - sAng;
+                minTrackRot = 90 - mAng;
+                hrTrackRot = 90 - hAng;
+                wkTrackRot = 90 - wAng;
+
+                trackElements.sec.style.transform = `translate(-50%, -50%) rotate(${secTrackRot}deg)`;
+                trackElements.min.style.transform = `translate(-50%, -50%) rotate(${minTrackRot}deg)`;
+                trackElements.hr.style.transform = `translate(-50%, -50%) rotate(${hrTrackRot}deg)`;
+                trackElements.wk.style.transform = `translate(-50%, -50%) rotate(${wkTrackRot}deg)`;
+            }
+
+            // --- 文字方向：正立模式下的动态矩阵反向实时补偿 ---
+            if (config.textDirectionMode === 'upright') {
+                // 秒圈数字：反向纠正值 = -(刻度本身角度 + 所在轨道的动态旋转角)
+                categorizedTickNums.sec.forEach(num => {
+                    num.style.transform = `rotate(${- (parseFloat(num.dataset.originalAngle) + secTrackRot)}deg)`;
+                });
+                // 分圈数字
+                categorizedTickNums.min.forEach(num => {
+                    num.style.transform = `rotate(${- (parseFloat(num.dataset.originalAngle) + minTrackRot)}deg)`;
+                });
+                // 时圈数字
+                categorizedTickNums.hr.forEach(num => {
+                    num.style.transform = `rotate(${- (parseFloat(num.dataset.originalAngle) + hrTrackRot)}deg)`;
+                });
+                // 周圈数字
+                categorizedTickNums.wk.forEach(num => {
+                    num.style.transform = `rotate(${- (parseFloat(num.dataset.originalAngle) + wkTrackRot)}deg)`;
+                });
+            }
 
             requestAnimationFrame(runClock);
         }
 
-        // 初始化加载与运行
         loadSavedConfig();
         requestAnimationFrame(runClock);
     </script>
