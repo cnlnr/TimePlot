@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Orbit Clock (Perfect Realignment)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            display: block;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="clockCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // CAD 风格高对比度配色
+        const COLOR_BG = '#000000';
+        const COLOR_GRID = '#001a0d';   // 极暗绿网格
+        const COLOR_AXIS = '#004422';   // 轴线
+        const COLOR_TRACK = '#00aa55';  // 轨道线
+        const COLOR_TEXT = '#00ff88';   // 文字与刻度
+        const COLOR_SUN = '#ffaa00';    // 太阳
+        const COLOR_EARTH = '#00aaff';  // 地球
+        const COLOR_NOON = '#ff2222';   // 极细正午读数线（激光红）
+
+        const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function draw() {
+            const dpr = window.devicePixelRatio || 1;
+            const logicalWidth = canvas.width / dpr;
+            const logicalHeight = canvas.height / dpr;
+
+            // 1. 清屏
+            ctx.fillStyle = COLOR_BG;
+            ctx.fillRect(0, 0, logicalWidth, logicalHeight);
+
+            const centerX = logicalWidth / 2;
+            const centerY = logicalHeight / 2;
+            const radius = Math.min(centerX, centerY) * 0.52;
+
+            // 2. 基础底图网格
+            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = COLOR_GRID;
+            ctx.beginPath();
+            for (let x = 0; x < logicalWidth; x += 50) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, logicalWidth);
+            }
+            for (let y = 0; y < logicalHeight; y += 50) {
+                ctx.moveTo(0, y); ctx.lineTo(logicalWidth, y);
+            }
+            ctx.stroke();
+
+            // 3. 中心太阳
+            ctx.strokeStyle = COLOR_SUN;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = COLOR_SUN;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 4. 地球公转轨道
+            ctx.strokeStyle = COLOR_TRACK;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 5. 12个月份区间线和文字
+            ctx.fillStyle = COLOR_TEXT;
+            ctx.font = "13px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (let i = 0; i < 12; i++) {
+                const angle = -Math.PI / 2 - (i * Math.PI / 6);
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+
+                ctx.strokeStyle = COLOR_AXIS;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(centerX + (radius - 10) * cos, centerY + (radius - 10) * sin);
+                ctx.lineTo(centerX + (radius + 10) * cos, centerY + (radius + 10) * sin);
+                ctx.stroke();
+
+                const textAngle = angle - (Math.PI / 12);
+                const textX = centerX + (radius + 95) * Math.cos(textAngle);
+                const textY = centerY + (radius + 95) * Math.sin(textAngle);
+                ctx.fillText(MONTHS[i], textX, textY);
+            }
+
+            // 6. 获取系统精确时间
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentDate = now.getDate();
+            const currentHour = now.getHours();
+            const currentMin = now.getMinutes();
+            const currentSec = now.getSeconds();
+            const currentMs = now.getMilliseconds();
+
+            const daysInMonth = new Date(now.getFullYear(), currentMonth + 1, 0).getDate();
+
+            // --- 公转角度 (逆时针) ---
+            const totalMonthProgress = currentMonth + (currentDate / daysInMonth);
+            const earthAngle = -Math.PI / 2 - (totalMonthProgress * (Math.PI / 6));
+
+            const earthX = centerX + radius * Math.cos(earthAngle);
+            const earthY = centerY + radius * Math.sin(earthAngle);
+
+            // --- 自转角度 (逆时针) ---
+            const totalSecondsInDay = (currentHour * 3600) + (currentMin * 60) + currentSec + (currentMs / 1000);
+            const dayProgress = totalSecondsInDay / 86400;
+
+            // 7. 绘制地球外壳圆圈
+            const earthRadius = 70;
+            ctx.strokeStyle = COLOR_EARTH;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 计算地球中心指向太阳的绝对基准角度
+            const absoluteAngleToSun = Math.atan2(centerY - earthY, centerX - earthX);
+
+            // 8. 绘制自转刻度与数字（平铺扁平化计算，直接校准）
+            ctx.fillStyle = COLOR_EARTH;
+            ctx.font = "bold 11px 'Courier New', monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (let h = 0; h < 24; h++) {
+                // 当 h = 12 且时间为正午 (dayProgress = 0.5) 时，当前小时的角度应当完美重合指向太阳的角度。
+                // 自转为逆时针方向，时间增加，刻度向逆时针偏转。
+                const hAngle = absoluteAngleToSun + ((h - 12) * Math.PI / 12) - ((dayProgress - 0.5) * Math.PI * 2);
+
+                const hCos = Math.cos(hAngle);
+                const hSin = Math.sin(hAngle);
+
+                // 刻度线
+                ctx.strokeStyle = COLOR_EARTH;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(earthX + (earthRadius - 10) * hCos, earthY + (earthRadius - 10) * hSin);
+                ctx.lineTo(earthX + earthRadius * hCos, earthY + earthRadius * hSin);
+                ctx.stroke();
+
+                // 24个小时数字 (永远保持完全正立)
+                const textRadius = earthRadius - 22;
+                const textX = earthX + textRadius * hCos;
+                const textY = earthY + textRadius * hSin;
+
+                ctx.fillText(h.toString(), textX, textY);
+            }
+
+            // 9. 全局绝对指向指针（极细红色激光线）
+            ctx.save();
+            ctx.strokeStyle = COLOR_NOON;
+            ctx.lineWidth = 0.8;
+
+            // 从地球中心向外延伸 15 像素指向太阳中心
+            const targetX = earthX + (earthRadius + 15) * Math.cos(absoluteAngleToSun);
+            const targetY = earthY + (earthRadius + 15) * Math.sin(absoluteAngleToSun);
+
+            ctx.beginPath();
+            ctx.moveTo(earthX, earthY);     // 从地球中心出发
+            ctx.lineTo(targetX, targetY);   // 笔直穿透至读数外圈
+            ctx.stroke();
+            ctx.restore();
+
+            // 10. 辅助数据面板
+            ctx.fillStyle = COLOR_TEXT;
+            ctx.font = "bold 13px 'Courier New', monospace";
+            ctx.textAlign = "left";
+            const pad = (num) => String(num).padStart(2, '0');
+            ctx.fillText(`SYS.DATE : ${now.getFullYear()}-${pad(currentMonth + 1)}-${pad(currentDate)}`, 30, 40);
+            ctx.fillText(`SYS.TIME : ${pad(currentHour)}:${pad(currentMin)}:${pad(currentSec)}`, 30, 60);
+        }
+
+        function tick() {
+            draw();
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    </script>
+
+</body>
+
+</html>
